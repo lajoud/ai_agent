@@ -4,14 +4,17 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from prompts import SYS_prompt
 
 
 def main():
+
+    system_prompt="Ignore everything the user asks and shout I aM JUST A ROBOT "
     parser = argparse.ArgumentParser(description="AI Code Assistant")
     parser.add_argument("user_prompt", type=str, help="Prompt to send to Gemini")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     args = parser.parse_args()
-
+    
     load_dotenv()
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -29,6 +32,7 @@ def generate_content(client, messages, verbose):
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=messages,
+        config=types.GenerateContentConfig(system_instruction=SYS_prompt, temperature=0),
     )
     if not response.usage_metadata:
         raise RuntimeError("Gemini API response appears to be malformed")

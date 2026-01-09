@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 from dotenv import load_dotenv
 from google import genai
@@ -28,9 +29,23 @@ def main():
     messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])]
     if args.verbose:
         print(f"User prompt: {args.user_prompt}\n")
+    
+    for _ in range(20):
+        #start of the loop
+        response, function_responses=generate_content(client, messages, args.verbose)
+        if response.candidates:
+            for element in response.candidates:
+                messages.append(element.content)
+        if function_responses:
+            messages.append(types.Content(role="user", parts=function_responses))
 
-    generate_content(client, messages, args.verbose)
-
+        if response.function_calls is None:
+            print(response.text)
+            return
+        
+    #if loop is over, return an error code 1
+    print("Maximum iteration reached")
+    sys.exit(1)
 
 def generate_content(client, messages, verbose):
     response = client.models.generate_content(
@@ -46,7 +61,7 @@ def generate_content(client, messages, verbose):
         print("Response tokens:", response.usage_metadata.candidates_token_count)
     print("Response:")
     if response.function_calls is None:
-        print(response.text)
+        return response, []
     else:
         response_list=[]
         for element in response.function_calls:
@@ -60,11 +75,8 @@ def generate_content(client, messages, verbose):
             response_list.append(function_call_result.parts[0])
             if verbose==True:
                 print(f"-> {function_call_result.parts[0].function_response.response}")
+        return response, response_list
         
-
-
-    
-    
 
 
 
